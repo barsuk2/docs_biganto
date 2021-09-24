@@ -1,0 +1,180 @@
+{% extends 'admin/base.html' %}
+{% set menu_current = 'team' %}
+
+
+{% block head %}
+    <style type="text/css">
+        h1.banned {
+            text-decoration: line-through;
+        }
+    </style>
+{% endblock %}
+
+
+{% block content %}
+    <div class="row"><p>
+        ← <a href="{{ url_for('.team') }}">Остальные сотрудники</a>
+    </p>
+        <div class="col-sm-4">
+            <p>
+                {% if user.team_member.avatar %}
+                    <img src="{{ user.team_member.avatar.url }}" width="{{ user.team_member.avatar.width }}"
+                         height="{{ user.team_member.avatar.height }}">
+                {% else %}
+                    <img src="/static/admin/person.png" width="200" height="200">
+                {% endif %}
+            </p>
+
+            {% if user.id == current_user.id %}
+                <p>
+                    <a href="#modal-photo-upload" data-toggle="modal" class="btn btn-success btn-sm">Загрузить фото</a>
+                </p>
+            {% endif %}
+
+            {% if user.team_member.can_edit() %}
+                <p>
+                    <a href="{{ url_for('.team_edit', user_id=user.id) }}" class="btn btn-info btn-sm">Редактировать</a>
+                </p>
+            {% endif %}
+
+        </div>
+        <div class="col-sm-8">
+            {% if user.timezone %}
+                <p>Был на сайте: {{ current_user.last_active|utcinlocal|humantime }}</p>
+            {% else %}
+                <p>Был на сайте: {{ user.last_active|humantime }}</p>
+
+            {% endif %}
+            {#            <p>Был на сайте относительно utc: {{ user.last_active}}</p>#}
+            <h1 {% if user.banned %} class="banned" {% endif %}>{{ user.name }}</h1>
+            {% if user.banned %}<h2 class="text-danger">Забанен:(</h2>{% endif %}
+            <h4>
+                {% if user.team_member.department %}
+                    <p>Отдел:
+                    <a href="{{ url_for('.team', department_id=user.team_member.department_id) }}">{{ user.team_member.department.title }},</a>
+
+                {% endif %}
+                {% if user.team_member.position %}
+                    должность: {{ user.team_member.position }}</p>{% endif %}
+            </h4>
+            {% if user.team_member.phone_mobile %}
+                <p>Мобильный телефон: {{ user.team_member.phone_mobile }}</p>
+            {% endif %}
+            <p>E-mail: <a href="mailto:{{ user.email }}">{{ user.email }}</a></p>
+            {% if user.team_member.telegram %}
+                <p>Telegram: <a href="http://t.me/{{ user.team_member.telegram }}">{{ user.team_member.telegram }}</a>
+                </p>
+            {% endif %}
+            {% if user.team_member.location_url %}
+                <p><a href="{{ user.team_member.location_url }}" class="btn btn-info" target="_blank">Где сидит</a></p>
+            {% endif %}
+        </div>
+
+    </div>
+    <hr>
+    <div class="row">
+        <div class="col-sm-4">
+
+            {% if user.team_member.description %}
+                <p>
+                <div class="description">Описание: {{ user.team_member.description|nl2br }}</div></p>
+            {% endif %}
+
+            {% if user.team_member.city_id %}
+                <p>Город: {{ user.team_member.city.name_ru }}</p>
+            {% endif %}
+            {% if user.team_member.city_id %}
+                <p>Кол-во дней в офисе: {{ user.team_member.office_days }}</p>
+            {% endif %}
+            {% if user.team_member.phone_internal %}
+                <p>Внутренний телефон: {{ user.team_member.phone_internal }}</p>
+            {% endif %}
+
+            {% if user.team_member.birthdate %}
+                <p>День рождения: {{ user.team_member.birthdate.strftime('%d.%m') }}</p>
+            {% endif %}
+            {% if user.team_member.hired %}
+                <p>Работает с {{ user.team_member.hired.strftime('%d.%m.%Y') }}</p>
+            {% endif %}
+            {% if user.team_member.fired %}
+                <p>Уволен с {{ user.team_member.fired.strftime('%d.%m.%Y') }}</p>
+            {% endif %}
+            <h4>Права:</h4>
+            {% if user.team_member.roles %}
+                <ul>
+                    {% for role in user.team_member.roles %}
+                        <li>{{ ROLES.get(role, role) }}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>Прав на сайте нет.</p>
+            {% endif %}
+            <a href="{{ url_for ('.team_member_status', user_id = user.id) }}" class="btn btn-info"
+            >Добавить, редактировать статус</a></div>
+
+        <div class="col-sm-4">
+            {% if current_user.has_role('team') %}
+                {% if team_status %}
+                    <div class="">
+                        <h4>Текущий статус сотрудника</h4>
+                        <table class="table table-bordered table-list">
+                            <thead>
+                            <tr>
+                                <th>Статус</th>
+                                <th>Дата начала</th>
+                                <th>Дата окончания</th>
+                                <th>Комментарий</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for item in team_status %}
+                                {% if item.finish > date_now %}
+                                    <tr>
+                                    <td>{{ item.type_ru|capitalize }}</td>
+                                    <td>{{ item.start.strftime('%d.%m.%Y') }}</td>
+                                    <td>{{ item.finish.strftime('%d.%m.%Y') }}</td>
+                                    <td>{{ item.comment }}</td>
+                                    </td>
+
+                                {% endif %}
+                            {% endfor %}
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    </div>
+    </div>
+
+
+    <form method="post" action="{{ url_for('.team_photo_upload', user_id=user.id) }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal" id="modal-photo-upload">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                        <h4 class="modal-title">Загрузить фото</h4>
+                    </div>
+                    <div class="modal-body">
+                        <p>
+                            <input type="file" name="photo" class="form-control">
+                        </p>
+                        <p class="help-block">
+                            Фотография появится на вашей странице после проверки.
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Загрузить</button>
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Отмена</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+
+{% endblock %}

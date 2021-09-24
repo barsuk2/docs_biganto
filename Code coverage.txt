@@ -1,0 +1,14 @@
+pytest --cov-report term --cov=visual.api3 вывести в терминал покрытие для api3
+pytest --cov-report html:cov_html --cov=visual.api3 создать html отчет
+
+
+--tb=[auto/long/short/line/native/no]: Управляет стилем трассировки.
+-v / --verbose: Отображает все имена тестов, пройденных или не пройденных.
+-l / --showlocals: Отображает локальные переменные рядом с трассировкой стека.
+-lf / --last-failed: Запускает только тесты, которые завершились неудачей.
+-x / --exitfirst: Останавливает тестовую сессию при первом сбое.
+--pdb: Запускает интерактивный сеанс отладки в точке сбоя.
+
+scope='function'
+scope='module'
+scope='session'
